@@ -103,24 +103,25 @@ with col2:
 
                 try:
                     # Execute backend logic
-                    # If run_pipeline returns two variables in your main.py, change this line to: 
-                    # results, blemish_ratio = run_pipeline(img_bgr)
                     results = run_pipeline(img_bgr)
                     
-                    # Fix for the missing argument: safely extract blemish_pixel_ratio
-                    blemish_ratio = results.get('blemish_pixel_ratio', 0.0) 
+                    # Fix: Use getattr() to safely pull attributes from the PipelineResult object
+                    blemish_ratio = getattr(results, 'blemish_pixel_ratio', 0.0) 
                     grade, composite_score, precautions = compute_severity(results, blemish_ratio)
 
                     # Determine if healthy based on the disease name
-                    disease_name = results.get('disease_name', 'None Detected')
-                    is_healthy = disease_name.lower() in ['none', 'none detected', 'healthy']
+                    disease_name = getattr(results, 'disease_name', 'None Detected')
+                    is_healthy = str(disease_name).lower() in ['none', 'none detected', 'healthy']
 
                     st.success("✅ Inspection Complete!")
                     
                     # Display metrics
                     mcol1, mcol2, mcol3 = st.columns(3)
-                    mcol1.metric("Defect Area", f"{results.get('defect_area', 0)}%")
-                    mcol2.metric("Model Confidence", f"{results.get('confidence', 0)}%")
+                    defect_area = getattr(results, 'defect_area', 0)
+                    confidence = getattr(results, 'confidence', 0)
+                    
+                    mcol1.metric("Defect Area", f"{defect_area}%")
+                    mcol2.metric("Model Confidence", f"{confidence}%")
                     mcol3.metric("Severity Score", f"{composite_score}/100")
                     
                     # Comprehensive Report
@@ -142,4 +143,3 @@ with col2:
 
                 except Exception as e:
                     st.error(f"System Error during analysis: {e}")
-                    st.write("*(Note: If the error says 'too many values to unpack', change line 80 to `results, blemish_ratio = run_pipeline(img_bgr)`)*")
