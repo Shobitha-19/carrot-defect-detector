@@ -24,11 +24,11 @@ To run the mobile-friendly web version locally:
 pip install -r requirements.txt
 streamlit run app.py
 
-**## 2. Standalone Windows Desktop App (.exe)**
+**2. Standalone Windows Desktop App (.exe)**
 
 pyinstaller --onefile --windowed --collect-all customtkinter main.py
 
-**### 📂 Project Structure**
+**📂 Project Structure**
 
 carrot-defect-detector/
 ├── app.py                 # Streamlit web application for mobile/browser
@@ -38,7 +38,7 @@ carrot-defect-detector/
 ├── requirements.txt       # Application dependencies
 └── README.md              # Project documentation
 
-**### 📬 Contact**
+**📬 Contact**
 
 Author: Shobitha
 Email: bshobi05@gmail.com
