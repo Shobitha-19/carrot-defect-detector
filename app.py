@@ -105,21 +105,22 @@ with col2:
                     # Execute backend logic
                     results = run_pipeline(img_bgr)
                     
-                    # Fix: Use getattr() to safely pull attributes from the PipelineResult object
+                    # 1. First, safely extract the actual numbers from the PipelineResult object
+                    defect_area = getattr(results, 'defect_area', 0.0)
                     blemish_ratio = getattr(results, 'blemish_pixel_ratio', 0.0) 
-                    grade, composite_score, precautions = compute_severity(results, blemish_ratio)
+                    confidence = getattr(results, 'confidence', 0.0)
+                    disease_name = getattr(results, 'disease_name', 'None Detected')
+                    
+                    # 2. Pass the raw numbers to the severity function (not the object!)
+                    grade, composite_score, precautions = compute_severity(defect_area, blemish_ratio)
 
                     # Determine if healthy based on the disease name
-                    disease_name = getattr(results, 'disease_name', 'None Detected')
                     is_healthy = str(disease_name).lower() in ['none', 'none detected', 'healthy']
 
                     st.success("✅ Inspection Complete!")
                     
                     # Display metrics
                     mcol1, mcol2, mcol3 = st.columns(3)
-                    defect_area = getattr(results, 'defect_area', 0)
-                    confidence = getattr(results, 'confidence', 0)
-                    
                     mcol1.metric("Defect Area", f"{defect_area}%")
                     mcol2.metric("Model Confidence", f"{confidence}%")
                     mcol3.metric("Severity Score", f"{composite_score}/100")
