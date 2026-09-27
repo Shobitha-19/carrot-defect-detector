@@ -54,7 +54,6 @@ st.markdown("""
         background-color: #2b2b2b;
         padding: 20px;
         border-radius: 10px;
-        border-left: 5px solid #FF8C00;
         margin-top: 15px;
     }
 </style>
@@ -105,30 +104,39 @@ with col2:
                     # 1. Execute backend vision pipeline
                     results = run_pipeline(img_bgr)
                     
-                    # 2. Extract numbers from PipelineResult
-                    defect_area = getattr(results, 'defect_area', 0.0)
-                    blemish_ratio = getattr(results, 'blemish_pixel_ratio', 0.0) 
-                    confidence = getattr(results, 'confidence', 0.0)
-                    disease_name = getattr(results, 'disease_name', 'None Detected')
+                    # 2. Extract EXACT attribute names mapped to your PipelineResult object
+                    blemish_ratio = getattr(results, 'blemish_ratio', 0.0) 
+                    classifier_conf = getattr(results, 'classifier_confidence', 0.0)
+                    raw_defect_name = getattr(results, 'defect_name', 'Unknown')
+                    model_used = getattr(results, 'model_used', False)
                     
-                    # 3. Calculate severity (Returns a SeverityReport object)
-                    severity_report = compute_severity(defect_area, blemish_ratio)
+                    # 3. Calculate severity mapping to your compute_severity parameters
+                    severity_report = compute_severity(
+                        classifier_confidence=classifier_conf,
+                        blemish_pixel_ratio=blemish_ratio,
+                        defect_name=raw_defect_name,
+                        model_used=model_used
+                    )
 
-                    # 4. Extract final answers from the SeverityReport object safely
-                    grade = getattr(severity_report, 'grade', 'N/A')
-                    composite_score = getattr(severity_report, 'composite_score', 0)
-                    precautions = getattr(severity_report, 'precautions', 'No specific treatment guidance provided.')
+                    # 4. Extract final answers from your SeverityReport object
+                    grade = severity_report.grade
+                    composite_score = severity_report.composite_score
+                    treatment = severity_report.treatment
+                    defect_pct = severity_report.defect_pct
+                    conf_pct = severity_report.classifier_conf * 100
+                    final_disease = severity_report.defect_name
+                    grade_colour = severity_report.grade_colour
 
                     # Determine if healthy
-                    is_healthy = str(disease_name).lower() in ['none', 'none detected', 'healthy']
+                    is_healthy = str(final_disease).lower() in ['none', 'none detected', 'healthy', 'unknown'] and defect_pct < 5.0
 
                     st.success("✅ Inspection Complete!")
                     
                     # Display metrics
                     mcol1, mcol2, mcol3 = st.columns(3)
-                    mcol1.metric("Defect Area", f"{defect_area}%")
-                    mcol2.metric("Model Confidence", f"{confidence}%")
-                    mcol3.metric("Severity Score", f"{composite_score}/100")
+                    mcol1.metric("Defect Area", f"{defect_pct:.2f}%")
+                    mcol2.metric("Model Confidence", f"{conf_pct:.2f}%")
+                    mcol3.metric("Severity Score", f"{composite_score:.2f}/100")
                     
                     # Comprehensive Report
                     st.markdown("### 📋 Final Inspection Report")
@@ -137,15 +145,15 @@ with col2:
                     if is_healthy:
                         st.success(f"**Health Status:** ✅ Healthy Carrot\n\n**Market Grade:** {grade}")
                     else:
-                        st.error(f"**Health Status:** ⚠️ Disease Detected - {disease_name}\n\n**Market Grade:** {grade}")
+                        st.error(f"**Health Status:** ⚠️ {final_disease}\n\n**Market Grade:** {grade}")
                     
-                    # Treatment Box
-                    st.markdown("""
-                    <div class="report-box">
+                    # Treatment Box (dynamically uses your custom grade colors)
+                    st.markdown(f"""
+                    <div class="report-box" style="border-left: 5px solid {grade_colour};">
                         <h4 style='margin-top:0px;'>💊 Treatment & Precautions</h4>
                     </div>
                     """, unsafe_allow_html=True)
-                    st.info(precautions)
+                    st.info(treatment)
 
                 except Exception as e:
                     st.error(f"System Error during analysis: {e}")
