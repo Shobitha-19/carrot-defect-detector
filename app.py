@@ -102,19 +102,24 @@ with col2:
                 img_bgr = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
 
                 try:
-                    # Execute backend logic
+                    # 1. Execute backend vision pipeline
                     results = run_pipeline(img_bgr)
                     
-                    # 1. First, safely extract the actual numbers from the PipelineResult object
+                    # 2. Extract numbers from PipelineResult
                     defect_area = getattr(results, 'defect_area', 0.0)
                     blemish_ratio = getattr(results, 'blemish_pixel_ratio', 0.0) 
                     confidence = getattr(results, 'confidence', 0.0)
                     disease_name = getattr(results, 'disease_name', 'None Detected')
                     
-                    # 2. Pass the raw numbers to the severity function (not the object!)
-                    grade, composite_score, precautions = compute_severity(defect_area, blemish_ratio)
+                    # 3. Calculate severity (Returns a SeverityReport object)
+                    severity_report = compute_severity(defect_area, blemish_ratio)
 
-                    # Determine if healthy based on the disease name
+                    # 4. Extract final answers from the SeverityReport object safely
+                    grade = getattr(severity_report, 'grade', 'N/A')
+                    composite_score = getattr(severity_report, 'composite_score', 0)
+                    precautions = getattr(severity_report, 'precautions', 'No specific treatment guidance provided.')
+
+                    # Determine if healthy
                     is_healthy = str(disease_name).lower() in ['none', 'none detected', 'healthy']
 
                     st.success("✅ Inspection Complete!")
@@ -134,7 +139,7 @@ with col2:
                     else:
                         st.error(f"**Health Status:** ⚠️ Disease Detected - {disease_name}\n\n**Market Grade:** {grade}")
                     
-                    # Treatment and Precautions Box
+                    # Treatment Box
                     st.markdown("""
                     <div class="report-box">
                         <h4 style='margin-top:0px;'>💊 Treatment & Precautions</h4>
