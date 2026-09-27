@@ -10,51 +10,92 @@ from severity_index import compute_severity
 # Configure page to wide mode for a more desktop-like feel
 st.set_page_config(page_title="Carrot Defect Detector", page_icon="🥕", layout="wide")
 
-# Inject Custom CSS for a modern, dark aesthetic
+# Inject Custom CSS for a premium dark aesthetic with a glowing background
 st.markdown("""
 <style>
+    /* Premium Mesh Gradient Background */
+    .stApp {
+        background-color: #0f1015;
+        background-image: 
+            radial-gradient(at 0% 0%, rgba(255, 140, 0, 0.12) 0px, transparent 40%),
+            radial-gradient(at 100% 100%, rgba(255, 140, 0, 0.08) 0px, transparent 50%);
+        background-attachment: fixed;
+    }
+    
+    /* Typography */
     .main-title {
         font-family: 'Segoe UI', sans-serif;
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: #FF8C00;
+        font-size: 2.8rem;
+        font-weight: 800;
+        background: -webkit-linear-gradient(45deg, #FF8C00, #FFA500);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
         margin-bottom: 0px;
     }
     .sub-title {
         font-family: 'Segoe UI', sans-serif;
         color: #A0A0A0;
+        font-size: 1.1rem;
         margin-bottom: 30px;
+        letter-spacing: 0.5px;
     }
+    
+    /* Sleek Tabs */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 10px;
+        gap: 15px;
     }
     .stTabs [data-baseweb="tab"] {
-        border-radius: 8px 8px 0px 0px;
+        border-radius: 6px 6px 0px 0px;
         padding: 10px 20px;
-        background-color: rgba(255, 140, 0, 0.1);
+        background-color: rgba(255, 140, 0, 0.05);
+        transition: all 0.3s ease;
     }
     .stTabs [aria-selected="true"] {
-        background-color: rgba(255, 140, 0, 0.2);
+        background-color: rgba(255, 140, 0, 0.15);
         border-bottom: 2px solid #FF8C00;
     }
+    
+    /* Glassmorphism Metric Cards */
     div[data-testid="metric-container"] {
-        background-color: #1E1E1E;
-        border: 1px solid #333333;
-        padding: 15px;
-        border-radius: 10px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        background: rgba(30, 30, 35, 0.6);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+        transition: transform 0.2s ease;
     }
+    div[data-testid="metric-container"]:hover {
+        transform: translateY(-2px);
+    }
+    
+    /* Modern Button */
     div.stButton > button {
         border-radius: 8px;
-        height: 50px;
-        font-weight: bold;
-        font-size: 18px;
+        height: 55px;
+        font-weight: 600;
+        font-size: 16px;
+        background-color: #FF8C00;
+        border: none;
+        box-shadow: 0 4px 15px rgba(255, 140, 0, 0.3);
+        transition: all 0.3s ease;
     }
+    div.stButton > button:hover {
+        background-color: #e67e00;
+        box-shadow: 0 6px 20px rgba(255, 140, 0, 0.4);
+    }
+    
+    /* Glassmorphism Report Box */
     .report-box {
-        background-color: #2b2b2b;
-        padding: 20px;
-        border-radius: 10px;
-        margin-top: 15px;
+        background: rgba(43, 43, 50, 0.5);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        padding: 25px;
+        border-radius: 12px;
+        margin-top: 20px;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.05);
     }
 </style>
 """, unsafe_allow_html=True)
@@ -101,16 +142,16 @@ with col2:
                 img_bgr = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
 
                 try:
-                    # 1. Execute backend vision pipeline
+                    # Execute backend vision pipeline
                     results = run_pipeline(img_bgr)
                     
-                    # 2. Extract EXACT attribute names mapped to your PipelineResult object
+                    # Extract EXACT attribute names mapped to your PipelineResult object
                     blemish_ratio = getattr(results, 'blemish_ratio', 0.0) 
                     classifier_conf = getattr(results, 'classifier_confidence', 0.0)
                     raw_defect_name = getattr(results, 'defect_name', 'Unknown')
                     model_used = getattr(results, 'model_used', False)
                     
-                    # 3. Calculate severity mapping to your compute_severity parameters
+                    # Calculate severity mapping to your compute_severity parameters
                     severity_report = compute_severity(
                         classifier_confidence=classifier_conf,
                         blemish_pixel_ratio=blemish_ratio,
@@ -118,7 +159,7 @@ with col2:
                         model_used=model_used
                     )
 
-                    # 4. Extract final answers from your SeverityReport object
+                    # Extract final answers from your SeverityReport object
                     grade = severity_report.grade
                     composite_score = severity_report.composite_score
                     treatment = severity_report.treatment
@@ -150,10 +191,12 @@ with col2:
                     # Treatment Box (dynamically uses your custom grade colors)
                     st.markdown(f"""
                     <div class="report-box" style="border-left: 5px solid {grade_colour};">
-                        <h4 style='margin-top:0px;'>💊 Treatment & Precautions</h4>
+                        <h4 style='margin-top:0px; margin-bottom:15px;'>💊 Treatment & Precautions</h4>
+                        <div style='color: #e0e0e0; font-size: 0.95rem; line-height: 1.6;'>
+                            {treatment.replace(chr(10), '<br>')}
+                        </div>
                     </div>
                     """, unsafe_allow_html=True)
-                    st.info(treatment)
 
                 except Exception as e:
                     st.error(f"System Error during analysis: {e}")
