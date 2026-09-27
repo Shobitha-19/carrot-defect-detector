@@ -23,3 +23,22 @@ To run the mobile-friendly web version locally:
 ```bash
 pip install -r requirements.txt
 streamlit run app.py
+
+**### 2. Standalone Windows Desktop App (.exe)**
+
+pyinstaller --onefile --windowed --collect-all customtkinter main.py
+
+**### 📂 Project Structure**
+
+carrot-defect-detector/
+├── app.py                 # Streamlit web application for mobile/browser
+├── main.py                # CustomTkinter desktop GUI application
+├── detection_pipeline.py  # Image processing & model inference
+├── severity_index.py      # Severity scoring & grading algorithms
+├── requirements.txt       # Application dependencies
+└── README.md              # Project documentation
+
+**### 📬 Contact**
+
+Author: Shobitha
+Email: bshobi05@gmail.com
