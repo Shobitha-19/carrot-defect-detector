@@ -49,24 +49,6 @@ st.markdown("""
         margin-bottom: 30px;
     }
     
-    /* Sleek Tabs */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 10px;
-    }
-    .stTabs [data-baseweb="tab"] {
-        background-color: #FDE8D0;
-        border-radius: 8px 8px 0px 0px;
-        padding: 10px 20px;
-        border: none;
-    }
-    .stTabs [aria-selected="true"] {
-        background-color: #FF8C42 !important;
-    }
-    .stTabs [aria-selected="true"] div {
-        color: #FFFFFF !important;
-        font-weight: bold;
-    }
-    
     /* Soft Metric Tiles */
     div[data-testid="metric-container"] {
         background-color: #FDE8D0 !important;
@@ -125,21 +107,22 @@ run_btn = False
 
 with col1:
     st.subheader("📷 Image Preview")
-    tab1, tab2 = st.tabs(["📂 Upload Image", "📸 Use Camera"])
+    
+    # Replaced tabs with radio buttons so the camera only triggers when explicitly selected
+    input_method = st.radio("Choose input method:", ["📂 Upload Image", "📸 Use Camera"], horizontal=True, label_visibility="collapsed")
 
-    with tab1:
+    if input_method == "📂 Upload Image":
         uploaded_photo = st.file_uploader("Choose an image from your device", type=["jpg", "jpeg", "png"])
         if uploaded_photo:
             img_buffer = uploaded_photo
 
-    with tab2:
+    elif input_method == "📸 Use Camera":
         camera_photo = st.camera_input("Capture using device camera")
         if camera_photo:
             img_buffer = camera_photo
 
     if img_buffer is not None:
         image = Image.open(img_buffer)
-        # Wrap image in a white "card" style container visually
         st.markdown("<div style='background: white; padding: 15px; border-radius: 14px; border: 1.5px solid #F0E0D0;'>", unsafe_allow_html=True)
         st.image(image, use_container_width=True)
         st.markdown("</div><br>", unsafe_allow_html=True)
@@ -163,29 +146,24 @@ with col2:
                 
                 for res in yolo_results:
                     for box in res.boxes:
-                        # 51 is the COCO class ID for 'carrot'
-                        if int(box.cls[0]) == 51 and float(box.conf[0]) > 0.5:
+                        # 51 is the COCO class ID for 'carrot', threshold lowered to 0.15 for diseased carrots
+                        if int(box.cls[0]) == 51 and float(box.conf[0]) > 0.15:
                             carrot_detected = True
                             break
                     if carrot_detected:
                         break
 
-                # If no carrot is found, display the exact error message and stop
                 if not carrot_detected:
                     st.error("invalid input this is not a carrot")
                 else:
-                    # Carrot is verified, proceed with original pipeline silently
                     try:
-                        # 1. Execute backend vision pipeline
                         results = run_pipeline(img_bgr)
                         
-                        # 2. Extract EXACT attribute names mapped to your PipelineResult object
                         blemish_ratio = getattr(results, 'blemish_ratio', 0.0) 
                         classifier_conf = getattr(results, 'classifier_confidence', 0.0)
                         raw_defect_name = getattr(results, 'defect_name', 'Unknown')
                         model_used = getattr(results, 'model_used', False)
                         
-                        # 3. Calculate severity mapping to your compute_severity parameters
                         severity_report = compute_severity(
                             classifier_confidence=classifier_conf,
                             blemish_pixel_ratio=blemish_ratio,
@@ -193,7 +171,6 @@ with col2:
                             model_used=model_used
                         )
 
-                        # 4. Extract final answers from your SeverityReport object
                         grade = severity_report.grade
                         composite_score = severity_report.composite_score
                         treatment = severity_report.treatment
@@ -202,17 +179,14 @@ with col2:
                         final_disease = severity_report.defect_name
                         grade_colour = severity_report.grade_colour
 
-                        # Determine if healthy
                         is_healthy = str(final_disease).lower() in ['none', 'none detected', 'healthy', 'unknown'] and defect_pct < 5.0
 
-                        # Dynamic Grade Badge mimicking the desktop app
                         st.markdown(f"""
                         <div style="background-color: {grade_colour}; color: white; padding: 12px; border-radius: 12px; text-align: center; font-size: 1.2rem; font-weight: bold; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                             {grade}
                         </div>
                         """, unsafe_allow_html=True)
                         
-                        # Display metrics in warm peach tiles
                         mcol1, mcol2 = st.columns(2)
                         mcol1.metric("Defect Area", f"{defect_pct:.1f} %")
                         mcol2.metric("Model Confidence", f"{conf_pct:.1f} %")
@@ -221,7 +195,6 @@ with col2:
                         mcol3.metric("Composite Score", f"{composite_score:.1f}")
                         mcol4.metric("Pipeline", "MobileNetV2" if model_used else "HSV only")
                         
-                        # Treatment Box (White Card)
                         st.markdown(f"""
                         <div class="report-box" style="border-top: 5px solid {grade_colour};">
                             <h4 style='margin-top:0px; color: #3D2B1F;'>💊 Treatment Guidance</h4>
