@@ -104,11 +104,12 @@ col1, col2 = st.columns([1, 1.2], gap="large")
 
 img_buffer = None
 run_btn = False
+force_bypass = False
 
 with col1:
     st.subheader("📷 Image Preview")
     
-    # Replaced tabs with radio buttons so the camera only triggers when explicitly selected
+    # Radio buttons so the camera only triggers when explicitly selected
     input_method = st.radio("Choose input method:", ["📂 Upload Image", "📸 Use Camera"], horizontal=True, label_visibility="collapsed")
 
     if input_method == "📂 Upload Image":
@@ -127,6 +128,8 @@ with col1:
         st.image(image, use_container_width=True)
         st.markdown("</div><br>", unsafe_allow_html=True)
         
+        # Added Bypass Checkbox
+        force_bypass = st.checkbox("Force Analysis (Bypass AI verification for heavily diseased samples)")
         run_btn = st.button("🔍 Run Inspection Pipeline", type="primary", use_container_width=True)
 
 with col2:
@@ -140,18 +143,23 @@ with col2:
                 img_array = np.array(image)
                 img_bgr = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
 
-                # --- YOLOv8 Carrot Verification Check ---
-                yolo_results = yolo_model(img_bgr, verbose=False)
                 carrot_detected = False
-                
-                for res in yolo_results:
-                    for box in res.boxes:
-                        # 51 is the COCO class ID for 'carrot', threshold lowered to 0.15 for diseased carrots
-                        if int(box.cls[0]) == 51 and float(box.conf[0]) > 0.15:
-                            carrot_detected = True
+
+                # Only run YOLO if the user hasn't explicitly bypassed it
+                if not force_bypass:
+                    yolo_results = yolo_model(img_bgr, verbose=False)
+                    for res in yolo_results:
+                        for box in res.boxes:
+                            # 51 is the COCO class ID for 'carrot'
+                            if int(box.cls[0]) == 51 and float(box.conf[0]) > 0.15:
+                                carrot_detected = True
+                                break
+                        if carrot_detected:
                             break
-                    if carrot_detected:
-                        break
+
+                # If bypass is checked, we assume it's a carrot and skip the error
+                if force_bypass:
+                    carrot_detected = True
 
                 if not carrot_detected:
                     st.error("invalid input this is not a carrot")
