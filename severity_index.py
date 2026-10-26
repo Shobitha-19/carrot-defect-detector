@@ -17,7 +17,7 @@ from typing import Dict, Tuple
 # Threshold is upper bound of composite defect severity (0 - 100)
 _GRADE_TABLE: list[Tuple[float, str, str]] = [
     (5.0,   "Grade A – Premium",    "#22c55e"),
-    (10.0,   "Grade B – Standard",   "#eab308"), # Lowered from 15.0 to 10.0
+    (15.0,   "Grade B – Standard",   "#eab308"), 
     (25.0,  "Grade C – Processing", "#f97316"), # Lowered from 35.0 to 25.0
     (100.0, "Grade D – Reject",     "#ef4444"),
 ]
