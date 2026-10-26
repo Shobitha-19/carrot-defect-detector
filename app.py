@@ -40,7 +40,7 @@ st.markdown("""
         color: #3D2B1F;
     }
     .main-title span {
-        color: #FF8C42;
+        color: #FF8C42; /* Carrot Orange Accent */
     }
     .sub-title {
         font-family: 'Segoe UI', sans-serif;
@@ -96,10 +96,10 @@ st.markdown("""
 
 # App Header
 st.markdown("<div class='main-title'><span>🥕</span> Carrot Defect Detector</div>", unsafe_allow_html=True)
-st.markdown("<div class='sub-title'>Edge-AI powered quality inspection & grading</div>", unsafe_allow_html=True)
+st.markdown("<div class='sub-title'>AI-powered quality inspection & grading</div>", unsafe_allow_html=True)
 st.markdown("---")
 
-# Layout
+# Layout: Left column for Input, Right column for Output
 col1, col2 = st.columns([1, 1.2], gap="large")
 
 img_buffer = None
@@ -109,6 +109,7 @@ force_bypass = False
 with col1:
     st.subheader("📷 Image Preview")
     
+    # Radio buttons so the camera only triggers when explicitly selected
     input_method = st.radio("Choose input method:", ["📂 Upload Image", "📸 Use Camera"], horizontal=True, label_visibility="collapsed")
 
     if input_method == "📂 Upload Image":
@@ -127,7 +128,8 @@ with col1:
         st.image(image, use_container_width=True)
         st.markdown("</div><br>", unsafe_allow_html=True)
         
-        force_bypass = st.checkbox("Force Analysis (Bypass YOLO verification)")
+        # Bypass Checkbox
+        force_bypass = st.checkbox("Force Analysis (Bypass AI verification for heavily diseased samples)")
         run_btn = st.button("🔍 Run Inspection Pipeline", type="primary", use_container_width=True)
 
 with col2:
@@ -143,21 +145,29 @@ with col2:
 
                 carrot_detected = False
 
+                # Only run YOLO if the user hasn't explicitly bypassed it
                 if not force_bypass:
                     yolo_results = yolo_model(img_bgr, verbose=False)
                     for res in yolo_results:
                         for box in res.boxes:
+                            # 51 is the COCO class ID for 'carrot'
                             if int(box.cls[0]) == 51 and float(box.conf[0]) > 0.15:
                                 carrot_detected = True
+                                
+                                # Crop the image to just the carrot to ignore background leaves and soil
                                 x1, y1, x2, y2 = map(int, box.xyxy[0])
                                 h, w, _ = img_bgr.shape
+                                
+                                # Add a 15-pixel margin so edges aren't cut off
                                 y1, y2 = max(0, y1 - 15), min(h, y2 + 15)
                                 x1, x2 = max(0, x1 - 15), min(w, x2 + 15)
+                                
                                 img_bgr = img_bgr[y1:y2, x1:x2]
                                 break
                         if carrot_detected:
                             break
 
+                # If bypass is checked, we assume it's a carrot and skip the error
                 if force_bypass:
                     carrot_detected = True
 
@@ -198,7 +208,7 @@ with col2:
                         
                         mcol3, mcol4 = st.columns(2)
                         mcol3.metric("Composite Score", f"{composite_score:.1f}")
-                        mcol4.metric("Pipeline", "MobileNetV2" if model_used else "HSV + Texture")
+                        mcol4.metric("Pipeline", "MobileNetV2" if model_used else "HSV only")
                         
                         st.markdown(f"""
                         <div class="report-box" style="border-top: 5px solid {grade_colour};">
