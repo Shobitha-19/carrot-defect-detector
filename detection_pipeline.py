@@ -39,22 +39,15 @@ DEFECT_CATEGORIES: list[str] = [
 ]
 # HSV ranges for surface blemish detection across carrot body
 _BLEMISH_HSV_RANGES: list[Tuple[np.ndarray, np.ndarray]] = [
-    # 1. Extreme Dark/Black Rot
-    (np.array([0, 0, 0]),     np.array([180, 255, 45])),
+    # 1. Extreme Dark/Black Rot (Value strictly under 50 to avoid any shadows)
+    (np.array([0, 0, 0]),     np.array([180, 255, 50])),
     
-    # 2. Gray/Brown Soil & Dirt
-    (np.array([0, 0, 0]),     np.array([180, 110, 160])),
+    # 2. Gray/Brown Dirt (Saturation strictly under 90 to avoid orange, Value under 120 to avoid glare)
+    (np.array([0, 0, 0]),     np.array([180, 90, 120])),
     
-    # 3. Reddish-Brown Lesions
-    (np.array([0, 111, 20]),  np.array([9, 255, 140])),
-    
-    # (Removed Green Crown rule to ignore healthy leaves)
-
-    # 4. White Mold / Fungal Growth (Low saturation, high brightness)
-    (np.array([0, 0, 180]),   np.array([180, 45, 255])),
+    # 3. Reddish-Brown Lesions (Strict Hue 0-10 to avoid orange 15-25)
+    (np.array([0, 111, 20]),  np.array([10, 255, 140])),
 ]
-    
-   
 # HSV signatures for heuristic multi-class identification
 _HEURISTIC_HSV: Dict[str, list[Tuple[np.ndarray, np.ndarray]]] = {
     "Black Rot": [
