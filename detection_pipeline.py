@@ -40,8 +40,8 @@ DEFECT_CATEGORIES: list[str] = [
 
 # HSV ranges for surface blemish detection across carrot body
 _BLEMISH_HSV_RANGES: list[Tuple[np.ndarray, np.ndarray]] = [
-    (np.array([0, 25, 0]),    np.array([28, 255, 95])),    # dark, necrotic, or brown blemishes
-    (np.array([0, 0, 0]),     np.array([180, 255, 45])),   # deep black rot / decay
+    (np.array([0, 25, 0]),    np.array([28, 255, 140])),   # Expanded: dark, necrotic, or brown blemishes (Value 95 -> 140)
+    (np.array([0, 0, 0]),     np.array([180, 255, 120])),  # Expanded: deep black rot / decay / soil (Value 45 -> 120)
     (np.array([32, 35, 35]),  np.array([85, 255, 255])),   # green crown / shoulder discolouration
 ]
 
