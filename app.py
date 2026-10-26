@@ -128,7 +128,7 @@ with col1:
         st.image(image, use_container_width=True)
         st.markdown("</div><br>", unsafe_allow_html=True)
         
-        # Added Bypass Checkbox
+        # Bypass Checkbox
         force_bypass = st.checkbox("Force Analysis (Bypass AI verification for heavily diseased samples)")
         run_btn = st.button("🔍 Run Inspection Pipeline", type="primary", use_container_width=True)
 
@@ -153,6 +153,16 @@ with col2:
                             # 51 is the COCO class ID for 'carrot'
                             if int(box.cls[0]) == 51 and float(box.conf[0]) > 0.15:
                                 carrot_detected = True
+                                
+                                # Crop the image to just the carrot to ignore background leaves and soil
+                                x1, y1, x2, y2 = map(int, box.xyxy[0])
+                                h, w, _ = img_bgr.shape
+                                
+                                # Add a 15-pixel margin so edges aren't cut off
+                                y1, y2 = max(0, y1 - 15), min(h, y2 + 15)
+                                x1, x2 = max(0, x1 - 15), min(w, x2 + 15)
+                                
+                                img_bgr = img_bgr[y1:y2, x1:x2]
                                 break
                         if carrot_detected:
                             break
@@ -162,7 +172,7 @@ with col2:
                     carrot_detected = True
 
                 if not carrot_detected:
-                    st.error("invalid input this is not a carrot")
+                    st.error("Invalid input: this is not a carrot.")
                 else:
                     try:
                         results = run_pipeline(img_bgr)
@@ -184,10 +194,7 @@ with col2:
                         treatment = severity_report.treatment
                         defect_pct = severity_report.defect_pct
                         conf_pct = severity_report.classifier_conf * 100
-                        final_disease = severity_report.defect_name
                         grade_colour = severity_report.grade_colour
-
-                        is_healthy = str(final_disease).lower() in ['none', 'none detected', 'healthy', 'unknown'] and defect_pct < 5.0
 
                         st.markdown(f"""
                         <div style="background-color: {grade_colour}; color: white; padding: 12px; border-radius: 12px; text-align: center; font-size: 1.2rem; font-weight: bold; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
