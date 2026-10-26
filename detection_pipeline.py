@@ -48,13 +48,11 @@ _BLEMISH_HSV_RANGES: list[Tuple[np.ndarray, np.ndarray]] = [
     # 3. Reddish-Brown Lesions
     (np.array([0, 111, 20]),  np.array([9, 255, 140])),
     
-    # 4. Green Crown/Sprouting
-    (np.array([30, 35, 35]),  np.array([85, 255, 255])),
+    # (Removed Green Crown rule to ignore healthy leaves)
 
-    # 5. White Mold / Fungal Growth (Low saturation, high brightness)
+    # 4. White Mold / Fungal Growth (Low saturation, high brightness)
     (np.array([0, 0, 180]),   np.array([180, 45, 255])),
 ]
-
     
    
 # HSV signatures for heuristic multi-class identification
