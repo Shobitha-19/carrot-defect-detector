@@ -2,101 +2,64 @@ import streamlit as st
 import cv2
 import numpy as np
 from PIL import Image
-from ultralytics import YOLO
 
-# Import your existing backend logic
+# Note: Ensure you have these local modules in the same directory
 from detection_pipeline import run_pipeline
 from severity_index import compute_severity
 
 # Configure page to wide mode for a more desktop-like feel
 st.set_page_config(page_title="Carrot Defect Detector", page_icon="🥕", layout="wide")
 
-# Load YOLO model silently in the background
-@st.cache_resource
-def load_yolo():
-    return YOLO("yolov8n.pt")
-
-yolo_model = load_yolo()
-
-# Inject Custom CSS mapped directly to your CustomTkinter color palette
+# Inject Custom CSS for a modern, CustomTkinter-style dark aesthetic
 st.markdown("""
 <style>
-    /* Force Light Mode / Peach Background */
-    .stApp {
-        background-color: #FFF0E0;
-    }
-    
-    /* General Typography */
-    h1, h2, h3, p, span, label, .stMarkdown {
-        color: #3D2B1F !important;
-    }
-    
-    /* Header Styling */
+    /* Main header styling */
     .main-title {
         font-family: 'Segoe UI', sans-serif;
         font-size: 2.5rem;
-        font-weight: 800;
+        font-weight: 700;
+        color: #FF8C00; /* Carrot Orange */
         margin-bottom: 0px;
-        color: #3D2B1F;
-    }
-    .main-title span {
-        color: #FF8C42; /* Carrot Orange Accent */
     }
     .sub-title {
         font-family: 'Segoe UI', sans-serif;
-        color: #7A6050 !important;
-        font-size: 1.1rem;
+        color: #A0A0A0;
         margin-bottom: 30px;
     }
-    
-    /* Soft Metric Tiles */
-    div[data-testid="metric-container"] {
-        background-color: #FDE8D0 !important;
-        border: 1.5px solid #F0E0D0 !important;
-        padding: 15px;
-        border-radius: 14px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    /* Style the tabs to look more like desktop buttons */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 10px;
     }
-    
-    /* Modern Orange Primary Button */
+    .stTabs [data-baseweb="tab"] {
+        border-radius: 8px 8px 0px 0px;
+        padding: 10px 20px;
+        background-color: rgba(255, 140, 0, 0.1);
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: rgba(255, 140, 0, 0.2);
+        border-bottom: 2px solid #FF8C00;
+    }
+    /* Metric Card Styling */
+    div[data-testid="metric-container"] {
+        background-color: #1E1E1E;
+        border: 1px solid #333333;
+        padding: 15px;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+    /* Button styling */
     div.stButton > button {
-        border-radius: 14px;
+        border-radius: 8px;
         height: 50px;
         font-weight: bold;
-        font-size: 16px;
-        background-color: #FF8C42 !important;
-        color: white !important;
-        border: none;
-        box-shadow: 0 4px 10px rgba(255, 140, 66, 0.3);
-        transition: all 0.2s;
-    }
-    div.stButton > button:hover {
-        background-color: #E07030 !important;
-        box-shadow: 0 4px 15px rgba(224, 112, 48, 0.4);
-    }
-    
-    /* File Uploader styling */
-    [data-testid="stFileUploadDropzone"] {
-        background-color: #FFFFFF;
-        border: 2px dashed #FF8C42;
-        border-radius: 14px;
-    }
-    
-    /* White Card for Report Box */
-    .report-box {
-        background-color: #FFFFFF;
-        padding: 25px;
-        border-radius: 14px;
-        margin-top: 15px;
-        border: 1.5px solid #F0E0D0;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+        font-size: 18px;
     }
 </style>
 """, unsafe_allow_html=True)
 
 # App Header
-st.markdown("<div class='main-title'><span>🥕</span> Carrot Defect Detector</div>", unsafe_allow_html=True)
-st.markdown("<div class='sub-title'>AI-powered quality inspection & grading</div>", unsafe_allow_html=True)
+st.markdown("<div class='main-title'>🥕 Carrot Defect Detector</div>", unsafe_allow_html=True)
+st.markdown("<div class='sub-title'>AI-Powered Agricultural Quality Inspection System</div>", unsafe_allow_html=True)
 st.markdown("---")
 
 # Layout: Left column for Input, Right column for Output
@@ -104,120 +67,75 @@ col1, col2 = st.columns([1, 1.2], gap="large")
 
 img_buffer = None
 run_btn = False
-force_bypass = False
 
 with col1:
-    st.subheader("📷 Image Preview")
-    
-    # Radio buttons so the camera only triggers when explicitly selected
-    input_method = st.radio("Choose input method:", ["📂 Upload Image", "📸 Use Camera"], horizontal=True, label_visibility="collapsed")
+    st.subheader("📷 Image Input")
+    tab1, tab2 = st.tabs(["📁 Upload Image", "📸 Use Camera"])
 
-    if input_method == "📂 Upload Image":
+    with tab1:
         uploaded_photo = st.file_uploader("Choose an image from your device", type=["jpg", "jpeg", "png"])
         if uploaded_photo:
             img_buffer = uploaded_photo
 
-    elif input_method == "📸 Use Camera":
+    with tab2:
         camera_photo = st.camera_input("Capture using device camera")
         if camera_photo:
             img_buffer = camera_photo
 
     if img_buffer is not None:
         image = Image.open(img_buffer)
-        st.markdown("<div style='background: white; padding: 15px; border-radius: 14px; border: 1.5px solid #F0E0D0;'>", unsafe_allow_html=True)
-        st.image(image, use_container_width=True)
-        st.markdown("</div><br>", unsafe_allow_html=True)
-        
-        # Bypass Checkbox
-        force_bypass = st.checkbox("Force Analysis (Bypass AI verification for heavily diseased samples)")
+        st.image(image, caption="Image Ready for Analysis", use_container_width=True)
+        # Use full width button for modern UI feel
         run_btn = st.button("🔍 Run Inspection Pipeline", type="primary", use_container_width=True)
 
 with col2:
-    st.subheader("📊 Statistics & Grading")
+    st.subheader("📊 Analysis Results")
     
     if img_buffer is None:
         st.info("Awaiting image input... Upload or capture a photo to initialize the pipeline.")
     else:
         if run_btn:
             with st.spinner("Analyzing image array..."):
+                # Convert PIL image to OpenCV format (BGR) for your pipeline
                 img_array = np.array(image)
                 img_bgr = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
 
-                carrot_detected = False
+                try:
+                    # Execute your backend logic
+                    results = run_pipeline(img_bgr)
+                    report = compute_severity(results)
 
-                # Only run YOLO if the user hasn't explicitly bypassed it
-                if not force_bypass:
-                    yolo_results = yolo_model(img_bgr, verbose=False)
-                    for res in yolo_results:
-                        for box in res.boxes:
-                            # 51 is the COCO class ID for 'carrot'
-                            if int(box.cls[0]) == 51 and float(box.conf[0]) > 0.15:
-                                carrot_detected = True
-                                
-                                # Crop the image to just the carrot to ignore background leaves and soil
-                                x1, y1, x2, y2 = map(int, box.xyxy[0])
-                                h, w, _ = img_bgr.shape
-                                
-                                # Add a 15-pixel margin so edges aren't cut off
-                                y1, y2 = max(0, y1 - 15), min(h, y2 + 15)
-                                x1, x2 = max(0, x1 - 15), min(w, x2 + 15)
-                                
-                                img_bgr = img_bgr[y1:y2, x1:x2]
-                                break
-                        if carrot_detected:
-                            break
+                    if not results.is_carrot:
+                        st.warning("⚠️ **No Carrot Detected!** The camera or upload should only contain a carrot.")
+                        annotated_rgb = cv2.cvtColor(results.annotated_image, cv2.COLOR_BGR2RGB)
+                        st.image(annotated_rgb, caption="Inspection Result: No Carrot Identified", use_container_width=True)
 
-                # If bypass is checked, we assume it's a carrot and skip the error
-                if force_bypass:
-                    carrot_detected = True
+                        st.markdown("---")
+                        st.markdown("### 🚫 Inspection Status: **Rejected (Not a Carrot)**")
+                        st.info(report.treatment)
+                    else:
+                        st.success("✅ **Carrot Verified & Inspected!**")
+                        annotated_rgb = cv2.cvtColor(results.annotated_image, cv2.COLOR_BGR2RGB)
+                        st.image(annotated_rgb, caption="Isolated Carrot & Surface Defect Overlay", use_container_width=True)
 
-                if not carrot_detected:
-                    st.error("Invalid input: this is not a carrot.")
-                else:
-                    try:
-                        results = run_pipeline(img_bgr)
-                        
-                        blemish_ratio = getattr(results, 'blemish_ratio', 0.0) 
-                        classifier_conf = getattr(results, 'classifier_confidence', 0.0)
-                        raw_defect_name = getattr(results, 'defect_name', 'Unknown')
-                        model_used = getattr(results, 'model_used', False)
-                        
-                        severity_report = compute_severity(
-                            classifier_confidence=classifier_conf,
-                            blemish_pixel_ratio=blemish_ratio,
-                            defect_name=raw_defect_name,
-                            model_used=model_used
-                        )
+                        # Display metrics in styled grid cards
+                        mcol1, mcol2, mcol3 = st.columns(3)
+                        mcol1.metric("Defect Area", f"{report.defect_pct:.2f}%")
+                        mcol2.metric("Diagnosis Confidence", f"{report.classifier_conf * 100:.1f}%")
+                        mcol3.metric("Severity Score", f"{report.composite_score:.1f} / 100")
 
-                        grade = severity_report.grade
-                        composite_score = severity_report.composite_score
-                        treatment = severity_report.treatment
-                        defect_pct = severity_report.defect_pct
-                        conf_pct = severity_report.classifier_conf * 100
-                        grade_colour = severity_report.grade_colour
+                        st.markdown("---")
 
-                        st.markdown(f"""
-                        <div style="background-color: {grade_colour}; color: white; padding: 12px; border-radius: 12px; text-align: center; font-size: 1.2rem; font-weight: bold; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                            {grade}
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                        mcol1, mcol2 = st.columns(2)
-                        mcol1.metric("Defect Area", f"{defect_pct:.1f} %")
-                        mcol2.metric("Model Confidence", f"{conf_pct:.1f} %")
-                        
-                        mcol3, mcol4 = st.columns(2)
-                        mcol3.metric("Composite Score", f"{composite_score:.1f}")
-                        mcol4.metric("Pipeline", "MobileNetV2" if model_used else "HSV only")
-                        
-                        st.markdown(f"""
-                        <div class="report-box" style="border-top: 5px solid {grade_colour};">
-                            <h4 style='margin-top:0px; color: #3D2B1F;'>💊 Treatment Guidance</h4>
-                            <div style='color: #7A6050; font-size: 0.95rem; line-height: 1.6; font-weight: 500;'>
-                                {treatment.replace(chr(10), '<br>')}
-                            </div>
-                        </div>
-                        """, unsafe_allow_html=True)
+                        # Highlighted Grade and Disease Box
+                        st.markdown(f"### 🏆 Market Grade: **{report.grade}**")
+                        if report.defect_name == "Healthy":
+                            st.success(f"**Condition:** {report.defect_name}")
+                        else:
+                            st.error(f"**Detected Condition:** {report.defect_name}")
 
-                    except Exception as e:
-                        st.error(f"System Error during analysis: {e}")
+                        # Treatment Section
+                        st.markdown("#### 💊 Treatment & Precautions")
+                        st.info(report.treatment)
+
+                except Exception as e:
+                    st.error(f"System Error during analysis: {e}")
